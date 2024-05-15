@@ -1,25 +1,28 @@
-import { Command } from '@commander-js/extra-typings'
+import { Command, Option } from '@commander-js/extra-typings'
 import { fetchFromPackageJson } from './lib/packageFetcher.js'
+import { type LevelWithSilentOrString } from 'pino'
+import { initLogger, logLevels } from './lib/logger.js'
 
 const program = new Command()
+// global
+program.addOption(
+  new Option('-l, --log-level <level>', 'sets the log level').choices(
+    logLevels,
+  ),
+)
+program.on('option:log-level', (level: LevelWithSilentOrString) => {
+  initLogger(level)
+})
+// fetch
 program
   .command('fetch')
   .description('fetches packages from npm registry')
   .alias('f')
-  .option('-p, --package-json <path>', 'path to the package.json file')
+  .requiredOption('-p, --package-json <path>', 'path to the package.json file')
   .option('-d, --dest', 'path to where the tar files are saved')
   .option('-n, --no-tar', 'don\t create a tar with all the downloaded packages')
   .action(async (options) => {
-    console.log('test')
-    if (!options.packageJson) {
-      return
-    }
-
     await fetchFromPackageJson(options.packageJson)
   })
 
-async function main(): Promise<void> {
-  await program.parseAsync(process.argv)
-}
-
-main()
+program.parse()

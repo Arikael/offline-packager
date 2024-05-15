@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --inspect cli.ts fetch -p package.json",
+    "dev": "tsx watch --inspect cli.ts fetch -p package.json | pino-pretty",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky install"
   },
@@ -17,8 +17,7 @@
     "@types/pacote": "^11.1.8",
     "commander": "^12.0.0",
     "pacote": "^18.0.6",
-    "pino": "^9.0.0",
-    "pino-pretty": "^11.0.0"
+    "pino": "^9.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",
@@ -28,7 +27,8 @@
     "prettier": "^3.2.5",
     "tsx": "^4.10.2",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.8.0"
+    "typescript-eslint": "^7.8.0",
+    "pino-pretty": "^11.0.0"
   },
   "lint-staged": {
     "*.{ts,js}": "eslint --cache --fix",

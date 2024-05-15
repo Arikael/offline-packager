@@ -1,10 +1,10 @@
 import * as fs from 'node:fs'
 import p from 'pacote'
+import { logger } from './logger.js'
 
 export const fetchFromPackageJson = async (packageJsonPath: string) => {
   const dependencies = await getPackageJsonContent(packageJsonPath)
-  console.log(dependencies)
-
+  logger.info('et')
   for (const [key, value] of dependencies) {
     const m = await p.manifest(key + '@' + value)
     console.log(m)
