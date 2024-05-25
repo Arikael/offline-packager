@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --inspect cli.ts fetch -p package.json | pino-pretty",
+    "dev": "tsx watch --inspect cli.ts fetch -p package.json --log-level debug | pino-pretty",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky install"
   },
@@ -13,22 +13,22 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@commander-js/extra-typings": "^12.0.1",
+    "@commander-js/extra-typings": "^12.1.0",
     "@types/pacote": "^11.1.8",
-    "commander": "^12.0.0",
+    "commander": "^12.1.0",
     "pacote": "^18.0.6",
-    "pino": "^9.0.0"
+    "pino": "^9.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.2.0",
-    "@types/node": "^20.12.11",
+    "@eslint/js": "^8.57.0",
+    "@types/node": "^20.12.12",
     "eslint": "8.56.0",
-    "globals": "^15.2.0",
+    "globals": "^15.3.0",
+    "pino-pretty": "^11.1.0",
     "prettier": "^3.2.5",
-    "tsx": "^4.10.2",
+    "tsx": "^4.11.0",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.8.0",
-    "pino-pretty": "^11.0.0"
+    "typescript-eslint": "^7.10.0"
   },
   "lint-staged": {
     "*.{ts,js}": "eslint --cache --fix",
