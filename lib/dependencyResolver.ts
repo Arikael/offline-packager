@@ -3,7 +3,7 @@ import pacote from 'pacote'
 import { logger } from './logger.js'
 import { Dependency, DependencyType, ManifestDependencies } from './dependency'
 import { isManifestWithDependencies } from './typeHelpers'
-import { InMemoryCache } from './caching/inMemoryCache'
+import { Cache } from './caching/cache'
 
 export interface ResolveOptions {
   packageJsonPath: string
@@ -11,7 +11,11 @@ export interface ResolveOptions {
 }
 
 export class DependencyResolver {
-  private _cache: InMemoryCache = new InMemoryCache()
+  private _cache: Cache
+
+  constructor(cache: Cache) {
+    this._cache = cache
+  }
 
   async resolvePackageJson(packageJsonPath: string): Promise<Dependency[]> {
     const manifest = await this.getManifestFromPackageJson(packageJsonPath)
@@ -27,7 +31,7 @@ export class DependencyResolver {
     )
 
     for (const dependency of dependencies) {
-      if (await this._cache.has(dependency)) {
+      if (await this._cache.exists(dependency.nameAndVersion)) {
         logger.debug(dependency, 'dependency already in cache')
         continue
       }
@@ -39,7 +43,7 @@ export class DependencyResolver {
       await this.resolveDependencies(manifest)
     }
 
-    return this._cache.entries()
+    return this._cache.getAll()
   }
 
   private getDependenciesFromManifest(

@@ -2,7 +2,14 @@ import { Dependency } from './dependency'
 import pacote from 'pacote'
 import * as fs from 'node:fs'
 import { logger } from './logger'
+import { Cache } from './caching/cache'
 export class DependencyDownloader {
+  private _cache: Cache
+
+  constructor(cache: Cache) {
+    this._cache = cache
+  }
+
   async downloadDependencies(dependencies: Dependency[], destination: string) {
     if (!fs.existsSync(destination)) {
       throw new Error('directory does not exist')
