@@ -13,7 +13,7 @@
     "./caching/sqlite-migration.sql"
   ],
   "keywords": [],
-  "author": "",
+  "author": "Arikael",
   "license": "MIT",
   "dependencies": {
     "@commander-js/extra-typings": "^12.1.0",
