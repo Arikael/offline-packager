@@ -1,6 +1,6 @@
 import { Dependency, DependencyStatus } from '../dependency'
 import { Cache } from './cache'
-import Database from 'better-sqlite3'
+import Database, { Statement } from 'better-sqlite3'
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
@@ -12,7 +12,24 @@ export class SqliteCache implements Cache {
     'status',
     'statusDate',
     'source',
+    'runId',
   ]
+
+  private preparedStatements: Map<string, Statement> = new Map()
+
+  getNextRunId(): Promise<number> {
+    const statement = this.getStatement(
+      'maxRunId',
+      'SELECT MAX(runId) + 1 FROM Dependencies',
+    )
+    const result = statement.get()
+
+    if (typeof result === 'number') {
+      return Promise.resolve(result)
+    }
+
+    return Promise.resolve(1)
+  }
 
   dispose(): Promise<void> {
     this.db.close()
@@ -29,10 +46,24 @@ export class SqliteCache implements Cache {
     return this._db
   }
 
+  private getStatement(key: string, sql: string): Statement {
+    let statement = this.preparedStatements.get(key)
+
+    if (!statement) {
+      statement = this.db.prepare(sql)
+      this.preparedStatements.set(key, statement)
+    } else if (statement.source !== sql) {
+      throw new Error(
+        `you tried to overwrite statement with key ${key} with a new sql query`,
+      )
+    }
+
+    return statement
+  }
+
   async initialize(): Promise<void> {
     const dbDirectory = path.join(os.homedir(), '.offline-packager')
     const dbName = 'offline-packager.db'
-    const dbExists = fs.existsSync(dbName)
 
     await fs.promises.mkdir(dbDirectory, {
       recursive: true,
@@ -41,31 +72,33 @@ export class SqliteCache implements Cache {
     const dbPath = path.join(dbDirectory, dbName)
     this._db = new Database(dbPath, {})
 
-    if (!dbExists) {
-      const migrationFile = './caching/sqlite-migration.sql'
-      const sql = await fs.promises.readFile(migrationFile, 'utf-8')
-      this.db.exec(sql)
-    }
+    const migrationFile = './caching/sqlite-migration.sql'
+    const sql = await fs.promises.readFile(migrationFile, 'utf-8')
+    this.db.exec(sql)
   }
 
-  set(dependency: Dependency): Promise<void> {
-    const statement = this.db.prepare(
-      'INSERT INTO dependencies (name, version, status, statusDate, source)',
+  add(dependency: Dependency): Promise<void> {
+    const statement = this.getStatement(
+      'set',
+      'INSERT INTO dependencies (name, version, status, statusDate, source, runId) ' +
+        'VALUES(@name, @version, @status, @statusDate, @source, @runId)',
     )
 
-    statement.run(
-      dependency.name,
-      dependency.version,
-      dependency.status,
-      dependency.statusDate,
-      'npm',
-    )
+    statement.run({
+      name: dependency.name,
+      version: dependency.version,
+      status: dependency.status,
+      statusDate: dependency.statusDate.toISOString(),
+      source: 'npm',
+      runId: dependency.runId,
+    })
 
     return Promise.resolve()
   }
 
   get(packageAndVersion: string): Promise<Dependency | undefined> {
-    const statement = this.db.prepare(
+    const statement = this.getStatement(
+      'get',
       `SELECT ${this.defaultColumns.join(',')} FROM dependencies WHERE nameAndVersion = ?`,
     )
     const dependency = statement.get(packageAndVersion)
@@ -73,31 +106,26 @@ export class SqliteCache implements Cache {
     return Promise.resolve(Dependency.tryConvertToDependency(dependency))
   }
 
-  exists(
-    packageAndVersion: string,
-    status?: DependencyStatus,
-  ): Promise<boolean> {
-    let sql = `SELECT ${this.defaultColumns.join(',')} FROM dependencies WHERE nameAndVersion = ?`
-
-    if (status) {
-      sql += ' AND status = ?'
+  exists(nameAndVersion: string, status?: DependencyStatus): Promise<boolean> {
+    const params = {
+      nameAndVersion,
+      status: status ? status : null,
     }
+    const sql =
+      `SELECT ${this.defaultColumns.join(',')} FROM dependencies ` +
+      'WHERE nameAndVersion = @nameAndVersion AND (status = @status OR @status IS NULL)'
 
-    const statement = this.db.prepare(sql)
-    const dependency = statement.run(packageAndVersion, status)
+    const statement = this.getStatement('exists', sql)
+    const dependency = statement.get(params)
 
     return Promise.resolve(dependency !== undefined)
   }
 
   getAll(status?: DependencyStatus): Promise<Dependency[]> {
-    let sql = `SELECT ${this.defaultColumns.join(',')} FROM Dependencies`
+    const sql = `SELECT ${this.defaultColumns.join(',')} FROM Dependencies WHERE status = @status OR @status IS NULL`
+    const statement = this.getStatement('getAll', sql)
+    const result = statement.all({ status })
 
-    if (status) {
-      sql += ' WHERE status = ?'
-    }
-
-    const statement = this.db.prepare(sql)
-    const result = statement.all(status)
     const dependencies = result
       .filter((x) => Dependency.isDependency(x))
       .map((x) => Dependency.convertToDependency(x))
@@ -106,12 +134,10 @@ export class SqliteCache implements Cache {
   }
 
   deleteAll(status?: DependencyStatus): Promise<void> {
-    let sql = 'DELETE FROM Dependencies'
+    const sql =
+      'DELETE FROM Dependencies WHERE status = @status OR @status IS NULL'
 
-    if (status) {
-      sql += ' WHERE status = ?'
-    }
-    const statement = this.db.prepare(sql)
+    const statement = this.getStatement('deleteAll', sql)
     statement.run(status)
 
     return Promise.resolve()

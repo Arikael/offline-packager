@@ -2,6 +2,14 @@ import { Dependency, DependencyStatus } from '../dependency'
 import { Cache } from './cache'
 
 export class InMemoryCache implements Cache {
+  async getNextRunId(): Promise<number> {
+    const all = await this.getAll()
+    const runId = all.reduce((prev, current) => {
+      return prev && prev.runId > current.runId ? prev : current
+    }).runId
+
+    return Promise.resolve(runId)
+  }
   async dispose(): Promise<void> {
     await this.deleteAll()
   }
@@ -29,8 +37,12 @@ export class InMemoryCache implements Cache {
     return Promise.resolve(dependencies)
   }
 
-  async set(dependency: Dependency): Promise<void> {
-    this._entries.set(dependency.nameAndVersion, dependency)
+  async add(dependency: Dependency): Promise<void> {
+    const exists = await this.exists(dependency.nameAndVersion)
+
+    if (!exists) {
+      this._entries.set(dependency.nameAndVersion, dependency)
+    }
 
     return Promise.resolve()
   }

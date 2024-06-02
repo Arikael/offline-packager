@@ -6,10 +6,28 @@ export enum DependencyStatus {
   downloaded,
 }
 
-export class Dependency {
+export interface NameAndVersion {
   name: string
   version: string
+}
+
+export class BaseDependency implements NameAndVersion {
+  name: string
+  version: string
+
+  constructor(name: string, version: string) {
+    this.name = name
+    this.version = version
+  }
+
+  get nameAndVersion() {
+    return this.name + '@' + this.version
+  }
+}
+
+export class Dependency extends BaseDependency {
   statusDate: Date
+  runId: number = -1
   private _status: DependencyStatus
 
   constructor(
@@ -18,8 +36,7 @@ export class Dependency {
     status: DependencyStatus = DependencyStatus.none,
     statusDate: Date = new Date(),
   ) {
-    this.name = name
-    this.version = version
+    super(name, version)
     this._status = status
     this.statusDate = statusDate
   }
@@ -33,8 +50,17 @@ export class Dependency {
     this.statusDate = new Date()
   }
 
-  get nameAndVersion() {
-    return this.name + '@' + this.version
+  static fromBaseDependency(
+    baseDependency: NameAndVersion,
+    status: DependencyStatus = DependencyStatus.none,
+    statusDate: Date = new Date(),
+  ): Dependency {
+    return new Dependency(
+      baseDependency.name,
+      baseDependency.version,
+      status,
+      statusDate,
+    )
   }
 
   static isDependency(dependency: unknown): dependency is Dependency {

@@ -22,7 +22,6 @@ program
 program
   .command('fetch')
   .description('fetches packages from npm registry')
-  .alias('f')
   .requiredOption(
     '-p, --package-json <package-json-path>',
     'path to the package.json file',
@@ -42,7 +41,9 @@ program
   )
   .action(async (options) => {
     const cache = await createCache(options.cache)
-    const dependencyResolver = new DependencyResolver(cache)
+    const runId = await cache.getNextRunId()
+
+    const dependencyResolver = new DependencyResolver(cache, runId)
     const dependenciesToDownload = await dependencyResolver.resolvePackageJson(
       options.packageJson,
     )

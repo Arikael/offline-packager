@@ -1,7 +1,12 @@
 import * as fs from 'node:fs'
 import pacote from 'pacote'
 import { logger } from './logger.js'
-import { Dependency, DependencyType, ManifestDependencies } from './dependency'
+import {
+  BaseDependency,
+  Dependency,
+  DependencyType,
+  ManifestDependencies,
+} from './dependency'
 import { isManifestWithDependencies } from './typeHelpers'
 import { Cache } from './caching/cache'
 
@@ -12,9 +17,11 @@ export interface ResolveOptions {
 
 export class DependencyResolver {
   private _cache: Cache
+  private _runId: number
 
-  constructor(cache: Cache) {
+  constructor(cache: Cache, runId: number) {
     this._cache = cache
+    this._runId = runId
   }
 
   async resolvePackageJson(packageJsonPath: string): Promise<Dependency[]> {
@@ -25,31 +32,38 @@ export class DependencyResolver {
   private async resolveDependencies(
     manifest: ManifestDependencies,
   ): Promise<Dependency[]> {
+    const resolvedDependencies: Dependency[] = []
     const dependencies = this.getDependenciesFromManifest(
       manifest,
       'dependencies',
     )
 
-    for (const dependency of dependencies) {
-      if (await this._cache.exists(dependency.nameAndVersion)) {
-        logger.debug(dependency, 'dependency already in cache')
-        continue
+    for (const baseDependency of dependencies) {
+      const manifest = await pacote.manifest(baseDependency.nameAndVersion)
+
+      if (await this._cache.exists(manifest.name + '@' + manifest.version)) {
+        logger.debug(baseDependency, 'dependency already in cache')
+      } else {
+        // TODO check how to better assign runId and handle cache
+        const dependency = Dependency.fromBaseDependency(manifest)
+        dependency.runId = this._runId
+        await this._cache.add(dependency)
+
+        resolvedDependencies.push(dependency)
+        logger.debug(dependency, 'dependency added to cache')
       }
 
-      const manifest = await pacote.manifest(dependency.nameAndVersion)
-      await this._cache.set(dependency)
-      logger.debug(dependency, 'dependency added to cache')
-
-      await this.resolveDependencies(manifest)
+      const childDependencies = await this.resolveDependencies(manifest)
+      childDependencies.forEach((x) => resolvedDependencies.push(x))
     }
 
-    return this._cache.getAll()
+    return resolvedDependencies
   }
 
   private getDependenciesFromManifest(
     manifest: ManifestDependencies,
     type: DependencyType,
-  ): Dependency[] {
+  ): BaseDependency[] {
     if (manifest[type]) {
       // TODO: dont use !, better narrow down type
       return Object.entries(manifest[type]!).map(

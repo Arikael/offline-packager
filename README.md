@@ -8,7 +8,7 @@ It's currently in a very early stage.
 Below is table with all planned packagers and their current state.  
 The order in the table is the planned order of implementation.
 
-Besides having every offline-packager as standalone, it's planned to use somekind of
+Besides having every offline-packager as standalone, it's planned to use some kind of
 orchestration, where a central service will control all packagers (download/upload) to easily
 automate the workflow.
 
