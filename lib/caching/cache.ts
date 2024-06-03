@@ -1,4 +1,4 @@
-import { Dependency, DependencyStatus } from '../dependency'
+import { Dependency, DependencyStatus } from './dependency'
 import { InMemoryCache } from './inMemoryCache'
 import { SqliteCache } from './sqliteCache'
 import { CacheType } from './cacheType'

@@ -1,4 +1,4 @@
-import { Dependency, DependencyStatus } from '../dependency'
+import { Dependency, DependencyStatus } from './dependency'
 import { Cache } from './cache'
 
 export class InMemoryCache implements Cache {

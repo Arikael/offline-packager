@@ -1,23 +1,33 @@
 import { Command, Option } from '@commander-js/extra-typings'
-import { type LevelWithSilentOrString } from 'pino'
-import { initLogger, logLevels } from './lib/logger.js'
+import {
+  initLogger,
+  logBenchmarks,
+  logLevels,
+  startBenchmark,
+  stopBenchmark,
+} from './lib/logger.js'
 import { DependencyResolver } from './lib/dependencyResolver'
-import { DependencyDownloader } from './lib/dependencyDownloader'
 import { CacheType } from './lib/caching/cacheType'
 import { createCache } from './lib/caching/cache'
+import { DependencyDownloader } from './lib/dependencyDownloader'
 
 const program = new Command()
 // global
 program
   .addOption(
-    new Option('-l, --log-level <level>', 'sets the log level').choices(
-      logLevels,
-    ),
+    new Option('-l, --log-level <level>', 'sets the log level')
+      .choices(logLevels)
+      .default('info'),
   )
-  .on('option:log-level', (level: LevelWithSilentOrString) => {
-    initLogger(level)
+  .option(
+    '--log-destination <destination>',
+    'sets the destination (filepath or 1 for STDOUT) to where the logs are written',
+    '1',
+  )
+  .hook('preAction', (thisCommand) => {
+    const opts = thisCommand.opts()
+    initLogger(opts.logLevel, opts.logDestination)
   })
-
 //  fetch packages
 program
   .command('fetch')
@@ -33,7 +43,10 @@ program
     './packages',
   )
   .option('-n, --no-tar', 'dont create a tar with all the downloaded packages')
-  .option('-c, --concurrency', 'defines how many concurrent downloads happen')
+  .option(
+    '-c, --concurrency <amount>',
+    'defines how many concurrent downloads happen',
+  )
   .addOption(
     new Option('-a, --cache <cacheType>', 'defines which cache is used')
       .default(CacheType.Sqlite)
@@ -43,16 +56,22 @@ program
     const cache = await createCache(options.cache)
     const runId = await cache.getNextRunId()
 
+    startBenchmark('resolving', 'resolving dependencies completed')
     const dependencyResolver = new DependencyResolver(cache, runId)
     const dependenciesToDownload = await dependencyResolver.resolvePackageJson(
       options.packageJson,
     )
+    stopBenchmark('resolving')
 
+    startBenchmark('downloading', 'downloading dependencies completed')
     const dependencyDownloader = new DependencyDownloader(cache)
     await dependencyDownloader.downloadDependencies(
       dependenciesToDownload,
       options.destination,
     )
+    stopBenchmark('downloading')
+
+    logBenchmarks()
   })
 
 program.parse()

@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx --inspect cli.ts fetch -p package.json --log-level debug | pino-pretty",
+    "dev": "tsx --inspect cli.ts fetch -p package.json --log-level debug | pino-pretty --singleLine",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky install"
   },

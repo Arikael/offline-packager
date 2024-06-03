@@ -1,24 +1,14 @@
-import { DependencyType, ManifestDependencies } from './dependency'
+import { ManifestDependencies } from './baseDependency'
 
-export const isManifestWithDependencies = (
+export const isManifest = (
   manifest: unknown,
 ): manifest is ManifestDependencies => {
   return (
-    isDependencyPropertyAnObject(manifest, 'dependencies') ||
-    isDependencyPropertyAnObject(manifest, 'devDependencies') ||
-    isDependencyPropertyAnObject(manifest, 'peerDependencies')
-  )
-}
-
-const isDependencyPropertyAnObject = (
-  // TODO: fix usage of any
-  //eslint-disable-next-line
-  manifest: any,
-  type: DependencyType,
-): boolean => {
-  return (
-    type in manifest &&
-    typeof manifest[type] === 'object' &&
-    manifest[type] !== null
+    typeof manifest === 'object' &&
+    manifest !== null &&
+    'name' in manifest &&
+    typeof manifest.name === 'string' &&
+    'version' in manifest &&
+    typeof manifest.version === 'string'
   )
 }

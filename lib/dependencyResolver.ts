@@ -1,14 +1,14 @@
 import * as fs from 'node:fs'
 import pacote from 'pacote'
 import { logger } from './logger.js'
+import { Dependency } from './caching/dependency'
+import { isManifest } from './typeHelpers'
+import { Cache } from './caching/cache'
 import {
   BaseDependency,
-  Dependency,
   DependencyType,
   ManifestDependencies,
-} from './dependency'
-import { isManifestWithDependencies } from './typeHelpers'
-import { Cache } from './caching/cache'
+} from './baseDependency'
 
 export interface ResolveOptions {
   packageJsonPath: string
@@ -39,21 +39,32 @@ export class DependencyResolver {
     )
 
     for (const baseDependency of dependencies) {
-      const manifest = await pacote.manifest(baseDependency.nameAndVersion)
+      const dependencyManifest = await pacote.manifest(
+        baseDependency.nameAndVersion,
+      )
+      const manifestNameAndVersion =
+        dependencyManifest.name + '@' + dependencyManifest.version
 
-      if (await this._cache.exists(manifest.name + '@' + manifest.version)) {
-        logger.debug(baseDependency, 'dependency already in cache')
+      if (await this._cache.exists(manifestNameAndVersion)) {
+        logger.debug(
+          baseDependency,
+          `dependency from ${manifest.name + '@' + manifest.version} already in cache`,
+        )
       } else {
         // TODO check how to better assign runId and handle cache
-        const dependency = Dependency.fromBaseDependency(manifest)
+        const dependency = Dependency.fromNameAndVersion(dependencyManifest)
         dependency.runId = this._runId
         await this._cache.add(dependency)
 
         resolvedDependencies.push(dependency)
-        logger.debug(dependency, 'dependency added to cache')
+        logger.debug(
+          baseDependency,
+          `dependency from ${manifest.name + '@' + manifest.version} added to cache`,
+        )
       }
 
-      const childDependencies = await this.resolveDependencies(manifest)
+      const childDependencies =
+        await this.resolveDependencies(dependencyManifest)
       childDependencies.forEach((x) => resolvedDependencies.push(x))
     }
 
@@ -84,20 +95,19 @@ export class DependencyResolver {
     const packageJson = await fs.promises.readFile(packageJsonPath, 'utf8')
     const content = JSON.parse(packageJson)
 
-    if (!isManifestWithDependencies(content)) {
-      logger.info(
-        packageJsonPath,
-        'is either not a package.json file or does not have any dependencies',
-      )
-      return {}
+    if (!isManifest(content)) {
+      throw new Error(`the file ${packageJsonPath} is not a valid manifest`)
+    }
+
+    const manifest: ManifestDependencies = {
+      name: content.name,
+      version: content.version,
     }
 
     if (content.dependencies) {
-      return {
-        dependencies: content.dependencies,
-      }
+      manifest.dependencies = content.dependencies
     }
 
-    return {}
+    return manifest
   }
 }

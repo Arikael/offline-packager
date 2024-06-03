@@ -1,9 +1,8 @@
-import { Dependency, DependencyStatus } from '../dependency'
+import { Dependency, DependencyStatus } from './dependency'
 import { Cache } from './cache'
 import Database, { Statement } from 'better-sqlite3'
 import fs from 'node:fs'
 import path from 'node:path'
-import os from 'node:os'
 
 export class SqliteCache implements Cache {
   private defaultColumns: string[] = [
@@ -54,7 +53,7 @@ export class SqliteCache implements Cache {
       this.preparedStatements.set(key, statement)
     } else if (statement.source !== sql) {
       throw new Error(
-        `you tried to overwrite statement with key ${key} with a new sql query`,
+        `you tried to overwrite the statement with key ${key} with a new sql query`,
       )
     }
 
@@ -62,7 +61,7 @@ export class SqliteCache implements Cache {
   }
 
   async initialize(): Promise<void> {
-    const dbDirectory = path.join(os.homedir(), '.offline-packager')
+    const dbDirectory = './'
     const dbName = 'offline-packager.db'
 
     await fs.promises.mkdir(dbDirectory, {

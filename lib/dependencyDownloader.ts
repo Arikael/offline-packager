@@ -1,4 +1,4 @@
-import { Dependency } from './dependency'
+import { Dependency } from './caching/dependency'
 import pacote from 'pacote'
 import * as fs from 'node:fs'
 import { logger } from './logger'

@@ -1,28 +1,9 @@
-import type { AbbreviatedManifest } from 'pacote'
+import { BaseDependency, NameAndVersion } from '../baseDependency'
 
 export enum DependencyStatus {
   none,
   resolved,
   downloaded,
-}
-
-export interface NameAndVersion {
-  name: string
-  version: string
-}
-
-export class BaseDependency implements NameAndVersion {
-  name: string
-  version: string
-
-  constructor(name: string, version: string) {
-    this.name = name
-    this.version = version
-  }
-
-  get nameAndVersion() {
-    return this.name + '@' + this.version
-  }
 }
 
 export class Dependency extends BaseDependency {
@@ -50,14 +31,14 @@ export class Dependency extends BaseDependency {
     this.statusDate = new Date()
   }
 
-  static fromBaseDependency(
-    baseDependency: NameAndVersion,
+  static fromNameAndVersion(
+    nameAndVersion: NameAndVersion,
     status: DependencyStatus = DependencyStatus.none,
     statusDate: Date = new Date(),
   ): Dependency {
     return new Dependency(
-      baseDependency.name,
-      baseDependency.version,
+      nameAndVersion.name,
+      nameAndVersion.version,
       status,
       statusDate,
     )
@@ -100,9 +81,3 @@ export class Dependency extends BaseDependency {
     throw new Error(`${source} is not convertible to Dependency`)
   }
 }
-
-export type ManifestDependencies = Pick<
-  AbbreviatedManifest,
-  'dependencies' | 'devDependencies' | 'peerDependencies' // | 'name' | 'version'
->
-export type DependencyType = keyof ManifestDependencies
