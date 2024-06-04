@@ -78,7 +78,7 @@ export class DependencyResolver {
     if (manifest[type]) {
       // TODO: dont use !, better narrow down type
       return Object.entries(manifest[type]!).map(
-        (x: [key: string, value: string]) => new Dependency(x[0], x[1]),
+        (x: [key: string, value: string]) => new BaseDependency(x[0], x[1]),
       )
     }
 
