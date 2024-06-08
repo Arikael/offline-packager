@@ -2,6 +2,7 @@ import { Command, Option } from '@commander-js/extra-typings'
 import {
   initLogger,
   logBenchmarks,
+  logger,
   logLevels,
   startBenchmark,
   stopBenchmark,
@@ -61,6 +62,7 @@ program
     const dependenciesToDownload = await dependencyResolver.resolvePackageJson(
       options.packageJson,
     )
+    dependencyResolver.concurrentResult.forEach((x) => logger.info(x))
     stopBenchmark('resolving')
 
     startBenchmark('downloading', 'downloading dependencies completed')

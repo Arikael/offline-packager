@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "tsx --inspect cli.ts fetch -p package.json --log-level debug | pino-pretty --singleLine",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "lint": "npx eslint ."
   },
   "files": [
     "./caching/sqlite-migration.sql"
@@ -18,7 +19,7 @@
   "dependencies": {
     "@commander-js/extra-typings": "^12.1.0",
     "@types/pacote": "^11.1.8",
-    "better-sqlite3": "^10.0.0",
+    "better-sqlite3": "^11.0.0",
     "commander": "^12.1.0",
     "pacote": "^18.0.6",
     "pino": "^9.1.0"
@@ -26,14 +27,14 @@
   "devDependencies": {
     "@eslint/js": "^8.57.0",
     "@types/better-sqlite3": "^7.6.10",
-    "@types/node": "^20.12.12",
+    "@types/node": "^20.14.2",
     "eslint": "8.56.0",
     "globals": "^15.3.0",
     "pino-pretty": "^11.1.0",
-    "prettier": "^3.2.5",
-    "tsx": "^4.11.0",
+    "prettier": "^3.3.1",
+    "tsx": "^4.11.2",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.11.0"
+    "typescript-eslint": "^7.12.0"
   },
   "lint-staged": {
     "*.{ts,js}": "eslint --cache --fix",

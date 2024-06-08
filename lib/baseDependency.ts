@@ -19,8 +19,8 @@ export class BaseDependency implements NameAndVersion {
   }
 }
 
-export type ManifestDependencies = Pick<
+export type SimpleManifest = Pick<
   AbbreviatedManifest,
   'dependencies' | 'devDependencies' | 'peerDependencies' | 'name' | 'version'
 >
-export type DependencyType = keyof ManifestDependencies
+export type DependencyType = keyof SimpleManifest

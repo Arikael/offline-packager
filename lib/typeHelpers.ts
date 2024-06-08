@@ -1,8 +1,6 @@
-import { ManifestDependencies } from './baseDependency'
+import { SimpleManifest } from './baseDependency'
 
-export const isManifest = (
-  manifest: unknown,
-): manifest is ManifestDependencies => {
+export const isManifest = (manifest: unknown): manifest is SimpleManifest => {
   return (
     typeof manifest === 'object' &&
     manifest !== null &&

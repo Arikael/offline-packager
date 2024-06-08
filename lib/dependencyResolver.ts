@@ -7,17 +7,14 @@ import { Cache } from './caching/cache'
 import {
   BaseDependency,
   DependencyType,
-  ManifestDependencies,
+  SimpleManifest,
 } from './baseDependency'
-
-export interface ResolveOptions {
-  packageJsonPath: string
-  destPath: string
-}
 
 export class DependencyResolver {
   private _cache: Cache
   private _runId: number
+  private concurrent = 0
+  public concurrentResult: number[] = []
 
   constructor(cache: Cache, runId: number) {
     this._cache = cache
@@ -29,50 +26,63 @@ export class DependencyResolver {
     return await this.resolveDependencies(manifest)
   }
 
-  private async resolveDependencies(
-    manifest: ManifestDependencies,
+  private async resolveDependency(
+    dependency: BaseDependency,
+    parentManifest: SimpleManifest,
   ): Promise<Dependency[]> {
     const resolvedDependencies: Dependency[] = []
+    const dependencyManifest = await pacote.manifest(dependency.nameAndVersion)
+    const manifestNameAndVersion =
+      dependencyManifest.name + '@' + dependencyManifest.version
+
+    if (await this._cache.exists(manifestNameAndVersion)) {
+      logger.debug(
+        dependency,
+        `dependency from ${parentManifest.name + '@' + parentManifest.version} already in cache`,
+      )
+    } else {
+      // TODO check how to better assign runId and handle cache
+      const dependency = Dependency.fromNameAndVersion(dependencyManifest)
+      dependency.runId = this._runId
+      await this._cache.add(dependency)
+
+      resolvedDependencies.push(dependency)
+      logger.debug(
+        dependency,
+        `dependency from ${parentManifest.name + '@' + parentManifest.version} added to cache`,
+      )
+    }
+
+    const childDependencies = await this.resolveDependencies(dependencyManifest)
+
+    return resolvedDependencies.concat(childDependencies)
+  }
+
+  private async resolveDependencies(
+    manifest: SimpleManifest,
+  ): Promise<Dependency[]> {
     const dependencies = this.getDependenciesFromManifest(
       manifest,
       'dependencies',
     )
 
-    for (const baseDependency of dependencies) {
-      const dependencyManifest = await pacote.manifest(
-        baseDependency.nameAndVersion,
-      )
-      const manifestNameAndVersion =
-        dependencyManifest.name + '@' + dependencyManifest.version
+    this.concurrent += dependencies.length
+    this.concurrentResult.push(this.concurrent)
 
-      if (await this._cache.exists(manifestNameAndVersion)) {
-        logger.debug(
-          baseDependency,
-          `dependency from ${manifest.name + '@' + manifest.version} already in cache`,
-        )
-      } else {
-        // TODO check how to better assign runId and handle cache
-        const dependency = Dependency.fromNameAndVersion(dependencyManifest)
-        dependency.runId = this._runId
-        await this._cache.add(dependency)
+    const resolveDependencies = dependencies.map((d) =>
+      this.resolveDependency(d, manifest),
+    )
+    const childDependencies = await Promise.all(resolveDependencies)
+    this.concurrent -= childDependencies.length
+    this.concurrentResult.push(this.concurrent)
 
-        resolvedDependencies.push(dependency)
-        logger.debug(
-          baseDependency,
-          `dependency from ${manifest.name + '@' + manifest.version} added to cache`,
-        )
-      }
-
-      const childDependencies =
-        await this.resolveDependencies(dependencyManifest)
-      childDependencies.forEach((x) => resolvedDependencies.push(x))
-    }
-
-    return resolvedDependencies
+    return childDependencies.reduce((prev, current) => {
+      return prev.concat(current)
+    }, [])
   }
 
   private getDependenciesFromManifest(
-    manifest: ManifestDependencies,
+    manifest: SimpleManifest,
     type: DependencyType,
   ): BaseDependency[] {
     if (manifest[type]) {
@@ -87,7 +97,7 @@ export class DependencyResolver {
 
   private async getManifestFromPackageJson(
     packageJsonPath: string,
-  ): Promise<ManifestDependencies> {
+  ): Promise<SimpleManifest> {
     if (!fs.existsSync(packageJsonPath)) {
       throw new Error('packageJsonPath does not exist')
     }
@@ -99,7 +109,7 @@ export class DependencyResolver {
       throw new Error(`the file ${packageJsonPath} is not a valid manifest`)
     }
 
-    const manifest: ManifestDependencies = {
+    const manifest: SimpleManifest = {
       name: content.name,
       version: content.version,
     }
