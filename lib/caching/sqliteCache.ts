@@ -8,6 +8,11 @@ export class SqliteCache implements Cache {
   private defaultColumns: string[] = [
     'name',
     'version',
+    'major',
+    'minor',
+    'patch',
+    'tagAndBuild',
+    'build',
     'status',
     'statusDate',
     'source',
@@ -79,13 +84,17 @@ export class SqliteCache implements Cache {
   add(dependency: Dependency): Promise<void> {
     const statement = this.getStatement(
       'set',
-      'INSERT INTO dependencies (name, version, status, statusDate, source, runId) ' +
-        'VALUES(@name, @version, @status, @statusDate, @source, @runId)',
+      'INSERT INTO dependencies (name, major, minor, patch, preRelease, build, status, statusDate, source, runId) ' +
+        'VALUES(@name, @major, @minor, @patch, @preRelease, @build, @status, @statusDate, @source, @runId)',
     )
 
     statement.run({
       name: dependency.name,
-      version: dependency.version,
+      major: dependency.version.major,
+      minor: dependency.version.minor,
+      patch: dependency.version.patch,
+      preRelease: dependency.version.prerelease,
+      build: dependency.version.build,
       status: dependency.status,
       statusDate: dependency.statusDate.toISOString(),
       source: 'npm',
@@ -102,7 +111,7 @@ export class SqliteCache implements Cache {
     )
     const dependency = statement.get(packageAndVersion)
 
-    return Promise.resolve(Dependency.tryConvertToDependency(dependency))
+    return Promise.resolve(this.tryConvertToDependency(dependency))
   }
 
   exists(nameAndVersion: string, status?: DependencyStatus): Promise<boolean> {
@@ -126,8 +135,8 @@ export class SqliteCache implements Cache {
     const result = statement.all({ status })
 
     const dependencies = result
-      .filter((x) => Dependency.isDependency(x))
-      .map((x) => Dependency.convertToDependency(x))
+      .filter((x) => this.isDependency(x))
+      .map((x) => this.convertToDependency(x))
 
     return Promise.resolve(dependencies)
   }
@@ -140,5 +149,43 @@ export class SqliteCache implements Cache {
     statement.run(status)
 
     return Promise.resolve()
+  }
+
+  private isDependency(dependency: unknown): dependency is Dependency {
+    return (
+      !!dependency &&
+      typeof dependency === 'object' &&
+      'name' in dependency &&
+      'major' in dependency &&
+      'minor' in dependency &&
+      'patch' in dependency &&
+      'preRelease' in dependency &&
+      'build' in dependency &&
+      'status' in dependency &&
+      'statusDate' in dependency
+    )
+  }
+
+  private convertToDependency(source: unknown): Dependency {
+    const dependency = this.tryConvertToDependency(source)
+
+    if (!dependency) {
+      throw new Error('source os not a dependency')
+    }
+
+    return dependency
+  }
+
+  private tryConvertToDependency(source: unknown): Dependency | undefined {
+    if (this.isDependency(source)) {
+      return new Dependency(
+        source.name,
+        source.version,
+        source.status,
+        source.statusDate,
+      )
+    }
+
+    return undefined
   }
 }

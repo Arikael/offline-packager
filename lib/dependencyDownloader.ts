@@ -3,6 +3,7 @@ import pacote from 'pacote'
 import * as fs from 'node:fs'
 import { logger } from './logger'
 import { Cache } from './caching/cache'
+
 export class DependencyDownloader {
   private _cache: Cache
 

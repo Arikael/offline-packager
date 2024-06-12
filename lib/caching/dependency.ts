@@ -1,4 +1,5 @@
 import { BaseDependency, NameAndVersion } from '../baseDependency'
+import { SemVer } from 'semver'
 
 export enum DependencyStatus {
   none,
@@ -13,7 +14,7 @@ export class Dependency extends BaseDependency {
 
   constructor(
     name: string,
-    version: string,
+    version: string | SemVer,
     status: DependencyStatus = DependencyStatus.none,
     statusDate: Date = new Date(),
   ) {
@@ -44,40 +45,40 @@ export class Dependency extends BaseDependency {
     )
   }
 
-  static isDependency(dependency: unknown): dependency is Dependency {
-    return (
-      !!dependency &&
-      typeof dependency === 'object' &&
-      'name' in dependency &&
-      'version' in dependency &&
-      'status' in dependency &&
-      'statusDate' in dependency
-    )
-  }
+  // static isDependency(dependency: unknown): dependency is Dependency {
+  //   return (
+  //     !!dependency &&
+  //     typeof dependency === 'object' &&
+  //     'name' in dependency &&
+  //     'version' in dependency &&
+  //     'status' in dependency &&
+  //     'statusDate' in dependency
+  //   )
+  // }
 
-  static tryConvertToDependency(source: unknown): Dependency | undefined {
-    if (Dependency.isDependency(source)) {
-      return new Dependency(
-        source.name,
-        source.version,
-        source.status,
-        source.statusDate,
-      )
-    }
+  // static tryConvertToDependency(source: unknown): Dependency | undefined {
+  //   if (Dependency.isDependency(source)) {
+  //     return new Dependency(
+  //       source.name,
+  //       source.version,
+  //       source.status,
+  //       source.statusDate,
+  //     )
+  //   }
 
-    return undefined
-  }
-
-  static convertToDependency(source: unknown): Dependency {
-    if (Dependency.isDependency(source)) {
-      return new Dependency(
-        source.name,
-        source.version,
-        source.status,
-        source.statusDate,
-      )
-    }
-
-    throw new Error(`${source} is not convertible to Dependency`)
-  }
+  //   return undefined
+  // }
+  //
+  // static convertToDependency(source: unknown): Dependency {
+  //   if (Dependency.isDependency(source)) {
+  //     return new Dependency(
+  //       source.name,
+  //       source.version,
+  //       source.status,
+  //       source.statusDate,
+  //     )
+  //   }
+  //
+  //   throw new Error(`${source} is not convertible to Dependency`)
+  // }
 }

@@ -1,17 +1,31 @@
 import type { AbbreviatedManifest } from 'pacote'
+import { SemVer } from 'semver'
+import semver from 'semver/preload'
 
 export interface NameAndVersion {
   name: string
   version: string
 }
 
-export class BaseDependency implements NameAndVersion {
+export class BaseDependency {
   name: string
-  version: string
+  version: SemVer = new SemVer('0.0.0')
+  get versionString() {
+    return this.version.toString()
+  }
 
-  constructor(name: string, version: string) {
+  constructor(name: string, version: string | SemVer) {
     this.name = name
-    this.version = version
+
+    if (typeof version === 'string') {
+      const semVer = semver.parse(version)
+
+      if (semVer) {
+        this.version = semVer
+      }
+    } else {
+      this.version = version
+    }
   }
 
   get nameAndVersion() {
