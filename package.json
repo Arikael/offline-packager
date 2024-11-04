@@ -19,27 +19,28 @@
   "dependencies": {
     "@commander-js/extra-typings": "^12.1.0",
     "@types/pacote": "^11.1.8",
-    "better-sqlite3": "^11.0.0",
+    "better-sqlite3": "^11.1.2",
     "commander": "^12.1.0",
     "pacote": "^18.0.6",
-    "pino": "^9.1.0",
-    "semver": "^7.6.2"
+    "pino": "^9.3.2",
+    "semver": "^7.6.3"
   },
   "devDependencies": {
     "@eslint/js": "^8.57.0",
-    "@types/better-sqlite3": "^7.6.10",
-    "@types/node": "^20.14.2",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.14.15",
     "@types/semver": "^7.5.8",
     "eslint": "8.56.0",
-    "globals": "^15.4.0",
-    "pino-pretty": "^11.1.0",
-    "prettier": "^3.3.1",
-    "tsx": "^4.14.0",
-    "typescript": "^5.4.5",
-    "typescript-eslint": "^7.12.0"
+    "globals": "^15.9.0",
+    "pino-pretty": "^11.2.2",
+    "prettier": "^3.3.3",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^7.18.0"
   },
   "lint-staged": {
     "*.{ts,js}": "eslint --cache --fix",
     "*.{ts,css,md,js}": "prettier --write"
-  }
+  },
+  "packageManager": "pnpm@9.2.0+sha256.94fab213df221c55b6956b14a2264c21c6203cca9f0b3b95ff2fe9b84b120390"
 }

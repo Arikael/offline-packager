@@ -1,6 +1,5 @@
 import type { AbbreviatedManifest } from 'pacote'
-import { SemVer } from 'semver'
-import semver from 'semver/preload'
+import { SemVer, parse, clean } from 'semver'
 
 export interface NameAndVersion {
   name: string
@@ -9,6 +8,7 @@ export interface NameAndVersion {
 
 export class BaseDependency {
   name: string
+  rawVersion: string | SemVer
   version: SemVer = new SemVer('0.0.0')
   get versionString() {
     return this.version.toString()
@@ -16,15 +16,24 @@ export class BaseDependency {
 
   constructor(name: string, version: string | SemVer) {
     this.name = name
+    this.rawVersion = version
 
     if (typeof version === 'string') {
-      const semVer = semver.parse(version)
-
-      if (semVer) {
-        this.version = semVer
-      }
+      this.trySetVersion(version)
     } else {
       this.version = version
+    }
+  }
+
+  trySetVersion(version: string) {
+    if (version.startsWith('^') || version.startsWith('~')) {
+      version = version.substring(1)
+    }
+
+    const semVer = parse(clean(version))
+
+    if (semVer) {
+      this.version = semVer
     }
   }
 

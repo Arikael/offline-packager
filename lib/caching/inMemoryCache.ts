@@ -52,17 +52,18 @@ export class InMemoryCache implements Cache {
   }
 
   async exists(
-    packageAndVersion: string,
+    dependency: Dependency,
     status?: DependencyStatus,
   ): Promise<boolean> {
     if (status) {
-      const dependency = this._entries.get(packageAndVersion)
-      const exists = (dependency && dependency.status === status) || false
+      const dependencyInCache = this._entries.get(dependency.nameAndVersion)
+      const exists =
+        (dependencyInCache && dependencyInCache.status === status) || false
 
       return Promise.resolve(exists)
     }
 
-    return Promise.resolve(this._entries.has(packageAndVersion))
+    return Promise.resolve(this._entries.has(dependency))
   }
 
   private _entries: Map<string, Dependency> = new Map()

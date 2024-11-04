@@ -31,9 +31,14 @@ export class DependencyResolver {
     parentManifest: SimpleManifest,
   ): Promise<Dependency[]> {
     const resolvedDependencies: Dependency[] = []
+
     const dependencyManifest = await pacote.manifest(dependency.nameAndVersion)
     const manifestNameAndVersion =
       dependencyManifest.name + '@' + dependencyManifest.version
+
+    if (!dependency.version) {
+      dependency.trySetVersion(dependencyManifest.version)
+    }
 
     if (await this._cache.exists(manifestNameAndVersion)) {
       logger.debug(

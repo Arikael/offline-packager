@@ -7,12 +7,14 @@ import path from 'node:path'
 export class SqliteCache implements Cache {
   private defaultColumns: string[] = [
     'name',
+    'rawVersion',
     'version',
     'major',
     'minor',
     'patch',
-    'tagAndBuild',
     'build',
+    'isLatest',
+    'nameAndVersion',
     'status',
     'statusDate',
     'source',
@@ -84,17 +86,18 @@ export class SqliteCache implements Cache {
   add(dependency: Dependency): Promise<void> {
     const statement = this.getStatement(
       'set',
-      'INSERT INTO dependencies (name, major, minor, patch, preRelease, build, status, statusDate, source, runId) ' +
-        'VALUES(@name, @major, @minor, @patch, @preRelease, @build, @status, @statusDate, @source, @runId)',
+      'INSERT INTO dependencies (name, rawVersion, major, minor, patch, preRelease, build, status, statusDate, source, runId) ' +
+        'VALUES(@name, @rawVersion, @major, @minor, @patch, @preRelease, @build, @status, @statusDate, @source, @runId)',
     )
 
     statement.run({
       name: dependency.name,
+      rawVersion: dependency.rawVersion,
       major: dependency.version.major,
       minor: dependency.version.minor,
       patch: dependency.version.patch,
-      preRelease: dependency.version.prerelease,
-      build: dependency.version.build,
+      preRelease: dependency.version.prerelease.join(''),
+      build: dependency.version.build.join(''),
       status: dependency.status,
       statusDate: dependency.statusDate.toISOString(),
       source: 'npm',
@@ -114,9 +117,9 @@ export class SqliteCache implements Cache {
     return Promise.resolve(this.tryConvertToDependency(dependency))
   }
 
-  exists(nameAndVersion: string, status?: DependencyStatus): Promise<boolean> {
+  exists(dependency: Dependency, status?: DependencyStatus): Promise<boolean> {
     const params = {
-      nameAndVersion,
+      nameAndVersion: dependency.nameAndVersion,
       status: status ? status : null,
     }
     const sql =
@@ -124,9 +127,9 @@ export class SqliteCache implements Cache {
       'WHERE nameAndVersion = @nameAndVersion AND (status = @status OR @status IS NULL)'
 
     const statement = this.getStatement('exists', sql)
-    const dependency = statement.get(params)
+    const existentDependency = statement.get(params)
 
-    return Promise.resolve(dependency !== undefined)
+    return Promise.resolve(existentDependency !== undefined)
   }
 
   getAll(status?: DependencyStatus): Promise<Dependency[]> {
@@ -156,6 +159,7 @@ export class SqliteCache implements Cache {
       !!dependency &&
       typeof dependency === 'object' &&
       'name' in dependency &&
+      'rawVersion' in dependency &&
       'major' in dependency &&
       'minor' in dependency &&
       'patch' in dependency &&

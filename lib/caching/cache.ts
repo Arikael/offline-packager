@@ -14,7 +14,7 @@ export interface Cache {
   add(dependency: Dependency): Promise<void>
   //setStatus(packageAndVersion: string, status: DependencyStatus): Promise<void>
   get(packageAndVersion: string): Promise<Dependency | undefined>
-  exists(packageAndVersion: string, status?: DependencyStatus): Promise<boolean>
+  exists(dependency: Dependency, status?: DependencyStatus): Promise<boolean>
   getAll(status?: DependencyStatus): Promise<Dependency[]>
   deleteAll(status?: DependencyStatus): Promise<void>
   initialize(): Promise<void>
